@@ -196,11 +196,25 @@ SELECT
     dtags.idtags AS idTags,
     r.rating AS rating,
     r.rated_at AS rated_at,
+    (SELECT AVG(rating) FROM ratings_staging WHERE movie_id = r.movie_id) AS avg_movie_rating,
+    (SELECT MEDIAN(rating) FROM ratings_staging WHERE movie_id = r.movie_id) AS median_movie_rating,
+    (SELECT COUNT(*) FROM ratings_staging WHERE movie_id = r.movie_id) AS movie_ratings_count,
+    (SELECT AVG(rating) FROM ratings_staging WHERE user_id = r.user_id) AS avg_user_rating,
+    (SELECT COUNT(*) FROM ratings_staging WHERE user_id = r.user_id) AS user_ratings_count
 FROM ratings_staging r
 JOIN dim_movies dmovies ON r.movie_id = dmovies.idmovies
 JOIN dim_primary_genres dgenres ON dmovies.primary_genre = dgenres.genre_name
 JOIN dim_time dtime ON TO_TIME(r.rated_at) = dtime.idtime
 JOIN dim_date ddate ON DATE(r.rated_at) = ddate.date
-JOIN dim_tags dtags ON dmovies.movie_title = dtags.movie_title
+LEFT JOIN dim_tags dtags ON dmovies.movie_title = dtags.movie_title
 JOIN dim_users duser ON r.user_id = duser.idusers
 );
+-- DROP staging tabuľky
+DROP TABLE IF EXISTS age_group_staging;
+DROP TABLE IF EXISTS occupations_staging;
+DROP TABLE IF EXISTS users_staging;
+DROP TABLE IF EXISTS movies_staging;
+DROP TABLE IF EXISTS ratings_staging;
+DROP TABLE IF EXISTS tags_staging;
+DROP TABLE IF EXISTS genres_staging;
+DROP TABLE IF EXISTS genres_movies_staging;
