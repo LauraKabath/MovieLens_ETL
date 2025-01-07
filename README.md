@@ -12,7 +12,7 @@ Semestrálny projekt má za cieľ analyzovať dáta súvisiace s filmami, žánr
 -	`users`
 -	`tags`
 -	`age_group`
-- `pccupations`
+- `occupations`
 -	`genres`
 -	`genres_movies`
 
@@ -22,7 +22,7 @@ Dáta sme pripravili, transformovali a sprístupnili pre viacdimenzionálnu anal
 ### **1.1 Dátová architektúra**
 
 ### **ERD diagram**
-V relačnom modeli, ktorý je znázornený na entitno-relačnom diagrame (ERD), sú usporiadané surové dáta.
+V relačnom modeli, ktorý je znázornený na **entitno-relačnom diagrame (ERD)**, sú usporiadané surové dáta.
 
 <p align="center">
   <img src="https://github.com/LauraKabath/MovieLens_ETL/blob/main/MovieLens_ERD_schema.png" alt="ERD Schema">
@@ -33,8 +33,9 @@ V relačnom modeli, ktorý je znázornený na entitno-relačnom diagrame (ERD), 
 ---
 ## **2 Dimenzionálny model**
 
-Pre efektívnu analýzu bol navrhnutý hviezdicový model (star schema), kde faktová tabuľka fact_ratings predstavuje centrálny bod prepojený s nasledujúcimi dimenziami:
-•	dim_movies: Obsahuje informácie o filmoch, ako je názov filmu, rok vydania, hlavný žáner (primary genre) a všetky žánre spojené s filmom.
+Pre efektívnu analýzu bol navrhnutý **hviezdicový model (star schema)**, kde faktová tabuľka **`fact_ratings`** predstavuje centrálny bod prepojený s nasledujúcimi dimenziami:
+
+- **`dim_movies`**: Obsahuje informácie o filmoch, ako je názov filmu, rok vydania, hlavný žáner (primary genre) a všetky žánre spojené s filmom.
 -	**`dim_users`**: Uchováva demografické informácie o používateľoch vrátane pohlavia, vekovej kategórie a povolania.
 -	**`dim_date`**: Poskytuje detailné informácie o dátume hodnotenia, ako je rok, mesiac, deň a deň v týždni.
 -	**`dim_time`**: Obsahuje časové informácie, ako hodiny, minúty a sekundy, AM/PM.
@@ -61,7 +62,7 @@ Prostredníctvom interného stage s názvom `LION_movielens_stage` boli do Snowf
 ```sql
 CREATE OR REPLACE STAGE LION_movielens_stage;
 ```
-Následne boli do stage nahraté súbory obsahujúce údaje o filmoch, používateľoch, žánroch, hodnoteniach, zamestnaní, vekových kategóriách a tagoch. Do staging tabuliek boli dáta importované pomocou príkazu COPY INTO. Pre každú tabuľku bol použitý podobný príkaz:
+Následne boli do stage nahraté súbory obsahujúce údaje o filmoch, používateľoch, žánroch, hodnoteniach, zamestnaní, vekových kategóriách a tagoch. Do staging tabuliek boli dáta importované pomocou príkazu `COPY INTO`. Pre každú tabuľku bol použitý podobný príkaz:
 
 ```sql
 COPY INTO users_staging
@@ -256,7 +257,7 @@ LIMIT 7;
 ```
 ---
 ### **Graf 3: Najviac používané tagy (Top 15 tags)**
-Graf vizualizuje 15 najčastejšie používaných tagov, ktoré používatelia priraďujú k filmom. Z grafu vyplýva, že používatelia často používajú všeobecné tagy ako „100 Greatest Movies“, ale aj konkrétne tagy spojené s hercami („Ben Affleck“) alebo žánrami („Action“). Tieto tagy odrážajú preferencie používateľov a môžu byť využité pri odporúčaniach alebo analýze trendov.
+Graf vizualizuje 15 najčastejšie používaných tagov, ktoré používatelia priraďujú k filmom. Z grafu vyplýva, že používatelia často používajú všeobecné tagy ako `100 Greatest Movies`, ale aj konkrétne tagy spojené s hercami (`Ben Affleck`) alebo žánrami (`Action`). Tieto tagy odrážajú preferencie používateľov a môžu byť využité pri odporúčaniach alebo analýze trendov.
 
 ```sql
 SELECT t.tags, COUNT(*) AS tags_count
@@ -268,7 +269,7 @@ LIMIT 15;
 ```
 ---
 ### **Graf 4: Aktivita používateľov počas dňa podľa zamestnaní**
-Tabuľka ukazuje počet hodnotení v priebehu dňa rozdelený podľa zamestnania používateľov. Z tabuľky vyplýva, že niektoré profesie, ako napríklad „Educator“ alebo „Artist“, sú aktívnejšie počas dopoludnia (am), zatiaľ čo iné môžu byť aktívnejšie popoludní (pm). Tieto informácie môžu byť užitočné pre prispôsobenie časového harmonogramu kampaní alebo analýzu správania používateľov podľa profesie.
+Tabuľka ukazuje počet hodnotení v priebehu dňa rozdelený podľa zamestnania používateľov. Z tabuľky vyplýva, že niektoré profesie, ako napríklad `Educator` alebo `Artist`, sú aktívnejšie počas dopoludnia (am), zatiaľ čo iné môžu byť aktívnejšie popoludní (pm). Tieto informácie môžu byť užitočné pre prispôsobenie časového harmonogramu kampaní alebo analýzu správania používateľov podľa profesie.
 
 ```sql
 SELECT u.occupation_name AS occupation, t.am_pm, COUNT(*) AS ratings_count 
@@ -280,7 +281,7 @@ ORDER BY t.am_pm, ratings_count;
 ```
 ---
 ### **Graf 5: Top 9 filmov podľa počtu hodnotení vs. podľa priemerného hodnotenia**
-Graf zobrazuje filmy s najvyšším počtom hodnotení a zároveň ich priemerné hodnotenie. Každý bod predstavuje jeden film. Z údajov v grafe vieme zistiť, že niektoré filmy, napríklad „American Beauty“ alebo „Star Wars: Episode IV – A New Hope“, majú vysoký počet hodnotení aj priemerné hodnotenie, čo ich robí populárnymi aj kvalitnými. Filmy s nižším priemerným hodnotením, ale vysokým počtom hodnotení môžu poukazovať na kontroverzné tituly, ktoré vyvolávajú zmiešané reakcie medzi divákmi. Takáto analýza umožňuje identifikovať filmy, ktoré by mohli byť vhodnými kandidátmi na intenzívnejšie marketingové kampane, aby sa zvýšil ich dosah a záujem publika.
+Graf zobrazuje filmy s najvyšším počtom hodnotení a zároveň ich priemerné hodnotenie. Každý bod predstavuje jeden film. Z údajov v grafe vieme zistiť, že niektoré filmy, napríklad `American Beauty` alebo `Star Wars: Episode IV – A New Hope`, majú vysoký počet hodnotení aj priemerné hodnotenie, čo ich robí populárnymi aj kvalitnými. Filmy s nižším priemerným hodnotením, ale vysokým počtom hodnotení môžu poukazovať na kontroverzné tituly, ktoré vyvolávajú zmiešané reakcie medzi divákmi. Takáto analýza umožňuje identifikovať filmy, ktoré by mohli byť vhodnými kandidátmi na intenzívnejšie marketingové kampane, aby sa zvýšil ich dosah a záujem publika.
 
 ```sql
 SELECT m.movie_title, AVG(r.rating) AS avg_movie_rating,
