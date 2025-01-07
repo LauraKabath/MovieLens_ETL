@@ -6,7 +6,7 @@ Daný repozitár obsahuje implementáciu ETL procesu v Snowflake pre analýzu d�
 ## **1. Úvod a popis zdrojových dát**
 Semestrálny projekt má za cieľ analyzovať dáta súvisiace s filmami, žánrami, používateľmi, ich hodnoteniami a tagmi. Analýzou tohto datasetu môžeme identifikovať používateľské preferencie, populárne filmy a správanie divákov.
 
- Z GroupLens datasetu, dostupného [tu] (https://grouplens.org/datasets/movielens/), sme získali zdrojové dáta. Získaný dataset obsahuje sedem hlavných tabuliek a jednu spojovaciu tabuľku:
+ Z GroupLens datasetu, dostupného [tu](https://grouplens.org/datasets/movielens/), sme získali zdrojové dáta. Získaný dataset obsahuje sedem hlavných tabuliek a jednu spojovaciu tabuľku:
 - `movies`
 -	`ratings`
 -	`users`
@@ -217,6 +217,83 @@ DROP TABLE IF EXISTS tags_staging;
 DROP TABLE IF EXISTS genres_staging;
 DROP TABLE IF EXISTS genres_movies_staging;
 ```
+Pôvodné dáta vo formáte `.csv` boli transformované do viacdimenzionálneho hviezdicového modelu pomocou ETL procesu v Snowflake. Tento proces zahŕňal kroky čistenia dát, ich obohacovania o dodatočné informácie a reorganizácie do štruktúry vhodnej na analýzu. Výsledný model poskytuje prehľad o diváckych preferenciách a správaní, čím vytvára pevný základ pre tvorbu reportov a vizualizácií.
+
 ---
 ## **4 Vizualizácia dát**
 
+V dashboarde sa nachádza `5 vizualizácií` poskytujúcich základný prehľad o kľúčových metrikách a trendoch, ktoré sa týkajú filmov, hodnotení, používateľoch, žánroch a tagoch. Vizualizácie nám dávajú odpovede na dôležité otázky, ktoré nám umožnia lepšie pochopiť používateľské preferencie a ich správanie.
+
+<p align="center">
+  <img src="https://github.com/LauraKabath/MovieLens_ETL/blob/main/MovieLens_dashboard.png" alt="Dashboard">
+  <br>
+  <em>Obrázok 3 Dashboard MovieLens datasetu</em>
+</p>
+
+---
+### **Graf 1: Aktivita používateľov počas mesiacov v roku podľa pohlavia**
+Čiarový graf zobrazuje aktivitu používateľov počas jednotlivých mesiacov. Počet hodnotení je rozdelený podľa pohlavia (žltá krivka – muži, modrá krivka - ženy). Na prvý pohľad si všimneme rozdielnu aktivitu mužov a žien počas roka. Muži hodnotia filmy podstatne viac ako ženy. Aktivita mužov je vyššia počas letných mesiacov, zatiaľ čo aktivita žien nezaznamenáva výrazné výkyvy. Tieto informácie môžu pomôcť identifikovať obdobia, kedy sú používatelia najaktívnejší, čo následne môžu využiť marketingové kampane.
+
+```sql
+SELECT u.gender, d.month, COUNT(*) as ratings_trend
+FROM fact_ratings r
+JOIN dim_date d ON d.iddate = r.iddate
+JOIN dim_users u ON r.idusers = u.idusers
+GROUP BY u.gender, d.month
+ORDER BY d.month;
+```
+---
+### **Graf 2: Top 7 žánrov podľa priemerného hodnotenia**
+Vizualizácia porovnáva žánre na základe ich priemerného hodnotenia. Najlepšie hodnotené žánre sú Film-Noir a Documentary, čo naznačuje, že tieto žánre sú často oceňované za svoju kvalitu. Naopak chýbajúce žánre s nižším hodnotením môžu naznačovať nižšiu spokojnosť divákov alebo kvalitu produkcie v týchto kategóriách.
+
+```sql
+SELECT g.genre_name, AVG(r.rating) AS avg_genre_rating
+FROM fact_ratings r
+JOIN dim_primary_genres g ON r.idprimarygenres = g.idprimarygenres
+GROUP BY g.genre_name
+ORDER BY avg_genre_rating DESC
+LIMIT 7;
+```
+---
+### **Graf 3: Najviac používané tagy (Top 15 tags)**
+Graf vizualizuje 15 najčastejšie používaných tagov, ktoré používatelia priraďujú k filmom. Z grafu vyplýva, že používatelia často používajú všeobecné tagy ako „100 Greatest Movies“, ale aj konkrétne tagy spojené s hercami („Ben Affleck“) alebo žánrami („Action“). Tieto tagy odrážajú preferencie používateľov a môžu byť využité pri odporúčaniach alebo analýze trendov.
+
+```sql
+SELECT t.tags, COUNT(*) AS tags_count
+FROM fact_ratings r
+JOIN dim_tags t ON r.idtags = t.idtags
+GROUP BY t.tags
+ORDER BY tags_count DESC
+LIMIT 15; 
+```
+---
+### **Graf 4: Aktivita používateľov počas dňa podľa zamestnaní**
+Tabuľka ukazuje počet hodnotení v priebehu dňa rozdelený podľa zamestnania používateľov. Z tabuľky vyplýva, že niektoré profesie, ako napríklad „Educator“ alebo „Artist“, sú aktívnejšie počas dopoludnia (am), zatiaľ čo iné môžu byť aktívnejšie popoludní (pm). Tieto informácie môžu byť užitočné pre prispôsobenie časového harmonogramu kampaní alebo analýzu správania používateľov podľa profesie.
+
+```sql
+SELECT u.occupation_name AS occupation, t.am_pm, COUNT(*) AS ratings_count 
+FROM fact_ratings r
+JOIN dim_time t ON r.idtime = t.idtime
+JOIN dim_users u ON r.idusers = u.idusers
+GROUP BY occupation, t.am_pm
+ORDER BY t.am_pm, ratings_count;
+```
+---
+### **Graf 5: Top 9 filmov podľa počtu hodnotení vs. podľa priemerného hodnotenia**
+Graf zobrazuje filmy s najvyšším počtom hodnotení a zároveň ich priemerné hodnotenie. Každý bod predstavuje jeden film. Z údajov v grafe vieme zistiť, že niektoré filmy, napríklad „American Beauty“ alebo „Star Wars: Episode IV – A New Hope“, majú vysoký počet hodnotení aj priemerné hodnotenie, čo ich robí populárnymi aj kvalitnými. Filmy s nižším priemerným hodnotením, ale vysokým počtom hodnotení môžu poukazovať na kontroverzné tituly, ktoré vyvolávajú zmiešané reakcie medzi divákmi. Takáto analýza umožňuje identifikovať filmy, ktoré by mohli byť vhodnými kandidátmi na intenzívnejšie marketingové kampane, aby sa zvýšil ich dosah a záujem publika.
+
+```sql
+SELECT m.movie_title, AVG(r.rating) AS avg_movie_rating,
+    COUNT(*) AS movie_ratings_count
+FROM fact_ratings r
+JOIN dim_movies m ON r.idmovies = m.idmovies
+GROUP BY m.movie_title
+ORDER BY movie_ratings_count DESC
+LIMIT 9;
+```
+
+Dashboard poskytuje detailný prehľad o preferenciách používateľov a ich správaní pri hodnotení filmov. Prostredníctvom vizualizácií umožňuje intuitívne analyzovať dáta a odpovedať na dôležité otázky, ako sú úroveň aktivity používateľov, popularita žánrov a filmov či trendy v používaní tagov. Tieto údaje môžu byť využité na zlepšenie výkonu odporúčacích systémov, navrhovanie cielených marketingových kampaní a prispôsobenie obsahu, čím sa zvýši spokojnosť používateľov a ich angažovanosť.
+
+---
+
+**Autor:** Laura Kabáthová
